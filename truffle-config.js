@@ -1,5 +1,8 @@
 require("babel-register");
 require("babel-polyfill");
+require("ts-node").register({
+  files: true,
+});
 
 module.exports = {
   networks: {
