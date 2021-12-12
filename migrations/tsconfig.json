@@ -13,5 +13,6 @@
     "types": ["@types/node", "@types/chai", "@types/mocha"],
     "typeRoots": ["../node_modules/@types", "./types"]
   },
+  "include": ["**/*.ts", "2_deploy_contracts.js", "2_deploy_contracts.js"],
   "exclude": []
 }
