@@ -5,9 +5,7 @@ dist-ssr
 *.local
 # truffle
 build
-
-# typechain
-types
+ 
 
 # buidler
 artifacts
