@@ -1,12 +1,31 @@
-import NavBar from "./components/NavBar";
-import { AppStyle } from "./styles/App";
+import { useEffect } from "react";
+import Web3 from "web3";
+import Layout from "./UI/Layout";
 
 function App() {
+  useEffect(() => {
+    (async () => {
+      let web3: Web3;
+      if (window.ethereum) {
+        // @ts-ignore
+        window.web3 = new Web3(window.ethereum);
+        await window.ethereum.enable();
+      }
+      // @ts-ignore
+      else if (window?.web3)
+        // @ts-ignore
+        window.web3 = new Web3(window.web3.currentProvider);
+      else
+        window.alert(
+          "Non-Ethereum browser detected. You should consider trying MetaMask!"
+        );
+    })();
+  }, []);
+
   return (
-    <AppStyle>
-      <NavBar />
-      <h1>Edit this file in App.js</h1>
-    </AppStyle>
+    <Layout>
+      <div></div>
+    </Layout>
   );
 }
 
