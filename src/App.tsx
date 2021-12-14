@@ -5,12 +5,14 @@ import { Web3Provider } from "@ethersproject/providers";
 import AppJson from "./abis/App.json";
 import Layout from "./UI/Layout";
 import ConnectWallet from "./components/ConnectWallet";
-import Web3 from "web3";
 import { ethers } from "ethers";
-import { Button, TextField } from "@mui/material";
 import { ButtonMetamask, TextFieldMetamask } from "./styles/MuiStyles";
 import { FormStyle } from "./components/NewImageForm/FormStyle";
 import { Buffer } from "buffer";
+import { create } from "ipfs-http-client";
+
+const client = create("https://ipfs.infura.io:5001/api/v0");
+
 function App() {
   const {
     active,
@@ -69,10 +71,12 @@ function App() {
 
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const target = e.target as typeof e.target & {
+    const { description } = e.target as typeof e.target & {
       file: { value: any };
       description: { value: string };
     };
+
+    uploadImage(description.value);
   };
 
   const captureFileEvent = async (e: any) => {
@@ -83,6 +87,22 @@ function App() {
     reader.onloadend = () => {
       setBuffer(Buffer.from(reader.result as ArrayBuffer));
     };
+  };
+
+  const uploadImage = (description: string) => {
+    console.log("Submitting file to ipfs");
+    // console.log(ipfs);
+    // ipfs.files.add(buffer, (error:any, result:any) => {
+    //   console.log("Ipfs Result", result);
+    //   if (error) console.error(error);
+    //   // setLoaded(false);
+    //   // contract
+    //   //   .uploadImage(result[0].hash, description)
+    //   //   .send({ from: account })
+    //   //   .on("transactionHash", () => {
+    //   //     setLoaded(true);
+    //   //   });
+    // });
   };
 
   return (
