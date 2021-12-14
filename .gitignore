@@ -10,3 +10,8 @@ build
 # buidler
 artifacts
 cache
+
+#bundler
+vite.config.ts
+.env
+vite.config.ts

@@ -9,9 +9,16 @@ import { ethers } from "ethers";
 import { ButtonMetamask, TextFieldMetamask } from "./styles/MuiStyles";
 import { FormStyle } from "./components/NewImageForm/FormStyle";
 import { Buffer } from "buffer";
-import { create } from "ipfs-http-client";
+import { Web3Storage, getFilesFromPath, File } from "web3.storage";
+const client = new Web3Storage({
+  token: process.env.REACT_APP_WEB3_STORAGE_KEY as string,
+});
 
-const client = create("https://ipfs.infura.io:5001/api/v0");
+const getImageName = (html: string) => {
+  const startName = html.indexOf("filename=") + 9;
+  let imageName = html.slice(startName);
+  return imageName.slice(0, imageName.indexOf(`">`));
+};
 
 function App() {
   const {
@@ -25,7 +32,9 @@ function App() {
     setError,
   } = useWeb3React<Web3Provider>();
   const [loaded, setLoaded] = useState(false);
-  const [buffer, setBuffer] = useState<any>();
+  const [image, setImage] = useState<any>();
+  const [imageName, setImageName] = useState<any>();
+  const [imageFromIPFS, setImageFromIPFS] = useState<any>();
   const [data, setData] = useState({
     account: "",
     app: null,
@@ -71,37 +80,38 @@ function App() {
 
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const { description } = e.target as typeof e.target & {
+    const { description, file } = e.target as typeof e.target & {
       file: { value: any };
       description: { value: string };
     };
-
+    if (!file.value || !description.value) return;
     uploadImage(description.value);
   };
 
   const captureFileEvent = async (e: any) => {
     e.preventDefault();
     const file = e.target.files[0];
-    const reader = new window.FileReader();
-    reader.readAsArrayBuffer(file);
-    reader.onloadend = () => {
-      setBuffer(Buffer.from(reader.result as ArrayBuffer));
-    };
+    console.log(file.name);
+    setImage(file);
   };
 
-  const uploadImage = (description: string) => {
+  const uploadImage = async (description: string) => {
     console.log("Submitting file to ipfs");
-    // console.log(ipfs);
-    // ipfs.files.add(buffer, (error:any, result:any) => {
-    //   console.log("Ipfs Result", result);
-    //   if (error) console.error(error);
-    //   // setLoaded(false);
-    //   // contract
-    //   //   .uploadImage(result[0].hash, description)
-    //   //   .send({ from: account })
-    //   //   .on("transactionHash", () => {
-    //   //     setLoaded(true);
-    //   //   });
+    const cid = await client.put([image]);
+    // const imageFromWeb3 = await client.get(cid);
+    const imageFromWeb3 = await fetch(`https://${cid}.ipfs.dweb.link/`);
+    const res = await imageFromWeb3.text();
+    const imageName = getImageName(res);
+    console.log(imageName);
+    setImageFromIPFS(imageFromWeb3);
+
+    return;
+    contract
+      .uploadImage(image, description)
+      .send({ from: account })
+      .on("transactionHash", () => {
+        setLoaded(true);
+      });
     // });
   };
 

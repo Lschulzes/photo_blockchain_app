@@ -26,7 +26,7 @@ export default function ConnectWallet({
         loading={!loaded}
         onClick={active ? disconnect : connect}
       >
-        {active ? "Disconnect" : "Connect"} to metamask
+        {active ? "Disconnect" : "Connect"} metamask
       </LoadingMetamaskButton>
       <p>
         {active ? (
