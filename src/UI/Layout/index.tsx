@@ -4,13 +4,13 @@ import NavBar from "../../components/NavBar";
 import { AppStyle } from "../../styles/App";
 type LayoutType = {
   children?: ReactNode;
+  account: string | null | undefined;
 };
 
-export default function Layout({ children }: LayoutType) {
+export default function Layout({ children, account }: LayoutType) {
   return (
     <AppStyle>
-      <NavBar />
-      <h1>Edit this file in App.js</h1>
+      <NavBar account={account} />
       <main>{children}</main>
       <Footer />
     </AppStyle>

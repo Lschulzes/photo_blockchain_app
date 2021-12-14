@@ -2,8 +2,11 @@ import { useWeb3React } from "@web3-react/core";
 import { useEffect, useState } from "react";
 import { injected } from "./services/connector";
 import { Web3Provider } from "@ethersproject/providers";
-
+import AppJson from "./abis/App.json";
 import Layout from "./UI/Layout";
+import ConnectWallet from "./components/ConnectWallet";
+import Web3 from "web3";
+import { ethers } from "ethers";
 
 function App() {
   const {
@@ -14,14 +17,22 @@ function App() {
     activate,
     deactivate,
     error,
+    setError,
   } = useWeb3React<Web3Provider>();
   const [loaded, setLoaded] = useState(false);
-
+  const [data, setData] = useState({
+    account: "",
+    app: null,
+    images: [],
+    loading: true,
+  });
+  const [contract, setContract] = useState<any>(undefined);
   async function connect() {
     try {
-      await activate(injected);
+      setLoaded(false);
+      activate(injected).finally(() => setLoaded(true));
     } catch (error) {
-      console.log(error);
+      setError(error as any);
     }
   }
 
@@ -34,31 +45,37 @@ function App() {
   }
 
   useEffect(() => {
-    injected
-      .isAuthorized()
-      .then((isAuthorized) => {
-        console.log(active);
-        setLoaded(true);
-        if (isAuthorized && !active && !error) {
-          activate(injected);
-        }
-      })
-      .finally(() => {
-        setLoaded(true);
-      });
-  }, [activate, active, error]);
+    if (active) return;
+    setLoaded(false);
+    activate(injected).finally(() => setLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const provider = new ethers.providers.JsonRpcProvider();
+      const app = new ethers.Contract(
+        AppJson.networks[1337].address,
+        AppJson.abi as any,
+        provider
+      );
+      if (!app) return;
+      const imageCount = await app.methods;
+      console.log(app);
+      console.log(imageCount);
+      setContract(app);
+    })();
+  }, [setContract]);
 
   return (
-    <Layout>
-      <h1 style={{ margin: "1rem", textAlign: "right" }}>
-        {active ? "🟢" : error ? "🔴" : "🟠"}
-      </h1>
-      <button onClick={active ? disconnect : connect}>
-        {active ? "Disconnect" : "Connect"} to metamask
-      </button>
-      <span>
-        {active ? `Connected with <b>${account}</b>` : "Not Connected"}
-      </span>
+    <Layout account={account}>
+      <ConnectWallet
+        account={account}
+        active={active}
+        connect={connect}
+        disconnect={disconnect}
+        error={error}
+        loaded={loaded}
+      />
     </Layout>
   );
 }
