@@ -10,7 +10,7 @@ import { ethers } from "ethers";
 import { Button, TextField } from "@mui/material";
 import { ButtonMetamask, TextFieldMetamask } from "./styles/MuiStyles";
 import { FormStyle } from "./components/NewImageForm/FormStyle";
-
+import { Buffer } from "buffer";
 function App() {
   const {
     active,
@@ -23,6 +23,7 @@ function App() {
     setError,
   } = useWeb3React<Web3Provider>();
   const [loaded, setLoaded] = useState(false);
+  const [buffer, setBuffer] = useState<any>();
   const [data, setData] = useState({
     account: "",
     app: null,
@@ -69,11 +70,19 @@ function App() {
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const target = e.target as typeof e.target & {
-      file: { value: string };
+      file: { value: any };
       description: { value: string };
     };
-    console.log(target.file.value);
-    console.log(target.description.value);
+  };
+
+  const captureFileEvent = async (e: any) => {
+    e.preventDefault();
+    const file = e.target.files[0];
+    const reader = new window.FileReader();
+    reader.readAsArrayBuffer(file);
+    reader.onloadend = () => {
+      setBuffer(Buffer.from(reader.result as ArrayBuffer));
+    };
   };
 
   return (
@@ -94,6 +103,7 @@ function App() {
             type="file"
             style={{ display: "none" }}
             accept=".jpg, .jpeg, .png, .bmp, .gif"
+            onChange={(e) => captureFileEvent(e)}
           />
           <label htmlFor="raised-button-file">
             {/* @ts-ignore */}
