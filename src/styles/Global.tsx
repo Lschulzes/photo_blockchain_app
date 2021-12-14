@@ -4,7 +4,7 @@ const Global = createGlobalStyle`
   body,html {
     margin: 0;
     padding: 0;
-    background: #f8f8f8;
+    background: #efefef;
     box-sizing: border-box;
   }
 `;
