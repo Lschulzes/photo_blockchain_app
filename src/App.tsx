@@ -54,13 +54,14 @@ function App() {
     (async () => {
       const provider = new ethers.providers.JsonRpcProvider();
       const app = new ethers.Contract(
-        AppJson.networks[1337].address,
-        AppJson.abi as any,
+        AppJson.networks[1639478509425].address,
+        AppJson.abi,
         provider
       );
       if (!app) return;
-      const imageCount = await app.methods;
-      console.log(app);
+
+      const res = await app.deployed();
+      const imageCount = await res.imageCount();
       console.log(imageCount);
       setContract(app);
     })();
