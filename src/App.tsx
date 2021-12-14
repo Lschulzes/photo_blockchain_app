@@ -1,5 +1,5 @@
 import { useWeb3React } from "@web3-react/core";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { injected } from "./services/connector";
 import { Web3Provider } from "@ethersproject/providers";
 
@@ -15,9 +15,8 @@ function App() {
     deactivate,
     error,
   } = useWeb3React<Web3Provider>();
-  useEffect(() => {
-    console.log({ active, account, library, connector, activate, deactivate });
-  }, [active, account, library, connector, activate, deactivate]);
+  const [loaded, setLoaded] = useState(false);
+
   async function connect() {
     try {
       await activate(injected);
@@ -33,6 +32,21 @@ function App() {
       console.log(error);
     }
   }
+
+  useEffect(() => {
+    injected
+      .isAuthorized()
+      .then((isAuthorized) => {
+        console.log(active);
+        setLoaded(true);
+        if (isAuthorized && !active && !error) {
+          activate(injected);
+        }
+      })
+      .finally(() => {
+        setLoaded(true);
+      });
+  }, [activate, active, error]);
 
   return (
     <Layout>
