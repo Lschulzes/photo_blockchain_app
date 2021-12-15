@@ -5,4 +5,8 @@ export const FormStyle = styled.form`
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+
+  img {
+    max-width: 400px;
+  }
 `;

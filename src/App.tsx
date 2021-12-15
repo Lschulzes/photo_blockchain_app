@@ -1,5 +1,5 @@
 import { useWeb3React } from "@web3-react/core";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { injected } from "./services/connector";
 import { Web3Provider } from "@ethersproject/providers";
 import AppJson from "./abis/App.json";
@@ -31,8 +31,10 @@ function App() {
     error,
     setError,
   } = useWeb3React<Web3Provider>();
-  const [loaded, setLoaded] = useState(false);
+  const textInput = useRef<string>();
+  const [loaded, setLoaded] = useState(true);
   const [image, setImage] = useState<any>();
+  const [imageDescription, setImageDescription] = useState<any>();
   const [imageName, setImageName] = useState<any>();
   const [imageFromIPFS, setImageFromIPFS] = useState<any>();
   const [data, setData] = useState({
@@ -42,7 +44,7 @@ function App() {
     loading: true,
   });
   const [contract, setContract] = useState<any>(undefined);
-  async function connect() {
+  function connect(): void {
     try {
       setLoaded(false);
       activate(injected).finally(() => setLoaded(true));
@@ -61,8 +63,7 @@ function App() {
 
   useEffect(() => {
     if (active) return;
-    setLoaded(false);
-    activate(injected).finally(() => setLoaded(true));
+    connect();
   }, []);
 
   useEffect(() => {
@@ -78,6 +79,13 @@ function App() {
     })();
   }, [setContract]);
 
+  const retrieveImageFromIPFS = async (cid: string) => {
+    const res = await fetch(`https://${cid}.ipfs.dweb.link/${imageName}`);
+    const imageBlob = await res.blob();
+    const imageFromWeb3 = URL.createObjectURL(imageBlob);
+    setImageFromIPFS(imageFromWeb3);
+  };
+
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const { description, file } = e.target as typeof e.target & {
@@ -86,33 +94,30 @@ function App() {
     };
     if (!file.value || !description.value) return;
     uploadImage(description.value);
+    textInput.current = "";
   };
 
   const captureFileEvent = async (e: any) => {
     e.preventDefault();
     const file = e.target.files[0];
-    console.log(file.name);
+    setImageName(file.name);
     setImage(file);
   };
 
   const uploadImage = async (description: string) => {
-    console.log("Submitting file to ipfs");
+    setImageDescription(description);
+    setLoaded(false);
     const cid = await client.put([image]);
     // const imageFromWeb3 = await client.get(cid);
-    const imageFromWeb3 = await fetch(`https://${cid}.ipfs.dweb.link/`);
-    const res = await imageFromWeb3.text();
-    const imageName = getImageName(res);
-    console.log(imageName);
-    setImageFromIPFS(imageFromWeb3);
+    await retrieveImageFromIPFS(cid);
+    setLoaded(true);
 
-    return;
-    contract
-      .uploadImage(image, description)
-      .send({ from: account })
-      .on("transactionHash", () => {
-        setLoaded(true);
-      });
-    // });
+    // contract
+    //   .uploadImage(image, description)
+    //   .send({ from: account })
+    //   .on("transactionHash", () => {
+    //     setLoaded(true);
+    //   });
   };
 
   return (
@@ -127,6 +132,12 @@ function App() {
       />
       {active && (
         <FormStyle onSubmit={(e) => handleFormSubmit(e)}>
+          {imageFromIPFS && (
+            <>
+              <img src={imageFromIPFS} />
+              <p>{imageDescription}</p>
+            </>
+          )}
           <input
             name="file"
             id="raised-button-file"
@@ -149,6 +160,7 @@ function App() {
               placeholder="Image description..."
               required
               name="description"
+              inputRef={textInput}
             />
           </div>
           <ButtonMetamask variant="outlined" type="submit">

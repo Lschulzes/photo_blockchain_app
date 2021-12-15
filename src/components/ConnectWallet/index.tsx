@@ -8,7 +8,7 @@ type ConnectWalletProps = {
   error: Error | undefined;
   account: string | null | undefined;
   disconnect: () => {};
-  connect: () => {};
+  connect: () => void;
 };
 
 export default function ConnectWallet({
