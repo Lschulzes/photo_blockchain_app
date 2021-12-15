@@ -14,12 +14,6 @@ const client = new Web3Storage({
   token: process.env.REACT_APP_WEB3_STORAGE_KEY as string,
 });
 
-const getImageName = (html: string) => {
-  const startName = html.indexOf("filename=") + 9;
-  let imageName = html.slice(startName);
-  return imageName.slice(0, imageName.indexOf(`">`));
-};
-
 function App() {
   const {
     active,
@@ -79,13 +73,6 @@ function App() {
     })();
   }, [setContract]);
 
-  const retrieveImageFromIPFS = async (cid: string) => {
-    const res = await fetch(`https://${cid}.ipfs.dweb.link/${imageName}`);
-    const imageBlob = await res.blob();
-    const imageFromWeb3 = URL.createObjectURL(imageBlob);
-    setImageFromIPFS(imageFromWeb3);
-  };
-
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const { description, file } = e.target as typeof e.target & {
@@ -108,16 +95,23 @@ function App() {
     setImageDescription(description);
     setLoaded(false);
     const cid = await client.put([image]);
-    // const imageFromWeb3 = await client.get(cid);
-    await retrieveImageFromIPFS(cid);
+    let res = await client.get(`${cid}`);
+    if (!res?.ok) {
+      throw new Error(
+        `failed to get ${cid} - [${res?.status}] ${res?.statusText}`
+      );
+    }
+    const file = ((await res?.files()) as any)[0];
+    const bufferArray = await file.arrayBuffer();
+    const img = Buffer.from(bufferArray).toString("base64");
+    setImageFromIPFS("data:image/png;base64," + img);
     setLoaded(true);
 
-    // contract
-    //   .uploadImage(image, description)
-    //   .send({ from: account })
-    //   .on("transactionHash", () => {
-    //     setLoaded(true);
-    //   });
+    const result = await contract.uploadImage(image, description, {
+      from: account,
+    });
+    console.log(result);
+    setLoaded(true);
   };
 
   return (
