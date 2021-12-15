@@ -11,7 +11,7 @@ export default function Layout({ children, account }: LayoutType) {
   return (
     <AppStyle>
       <NavBar account={account} />
-      <main>{children}</main>
+      <main style={{ paddingBottom: "5rem" }}>{children}</main>
       <Footer />
     </AppStyle>
   );

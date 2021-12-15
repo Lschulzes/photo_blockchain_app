@@ -10,9 +10,11 @@ import { ButtonMetamask, TextFieldMetamask } from "./styles/MuiStyles";
 import { FormStyle } from "./components/NewImageForm/FormStyle";
 import { Buffer } from "buffer";
 import { Web3Storage, getFilesFromPath, File } from "web3.storage";
-const client = new Web3Storage({
-  token: process.env.REACT_APP_WEB3_STORAGE_KEY as string,
-});
+import { image, retrieveImageFromWeb3Storage } from "./helpers/ipfs";
+import { client } from "./services/ipfs";
+import ImageItem from "./components/ImageItem";
+import ImageList from "./components/ImageList";
+import Web3 from "web3";
 
 function App() {
   const {
@@ -31,7 +33,7 @@ function App() {
   const [imageDescription, setImageDescription] = useState<any>();
   const [imageName, setImageName] = useState<any>();
   const [imageFromIPFS, setImageFromIPFS] = useState<any>();
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState<image[]>([]);
   const [contract, setContract] = useState<any>(undefined);
   function connect(): void {
     try {
@@ -50,13 +52,28 @@ function App() {
     }
   }
 
-  // useEffect(() => {
-  //   if (!active) return;
-  //   (async () => {
-  //     const imagesCount = await contract.imageCount();
-  //     console.log(imagesCount);
-  //   })();
-  // }, [image]);
+  useEffect(() => {
+    if (!active || !contract) return;
+    (async () => {
+      const imagesCount = Number(await contract.imageCount());
+      setImages([]);
+      let images: image[] = [];
+      for (let i = 0; i < imagesCount; i++) {
+        const image: image = await contract.images(i);
+        let url = "";
+        try {
+          url = await retrieveImageFromWeb3Storage(image.hash);
+        } catch (e) {}
+
+        url?.length
+          ? images.push({ ...image, url })
+          : images.push({ ...image });
+      }
+      console.log(images);
+      setImages(images);
+    })();
+  }, [setImages, active, contract, imageFromIPFS]);
+
   useEffect(() => {
     if (active) return;
     connect();
@@ -72,9 +89,6 @@ function App() {
       );
       if (!app) return;
       setContract(app);
-      app.name().then((res: any) => {
-        console.log(res);
-      });
     })();
   }, [setContract]);
 
@@ -96,25 +110,22 @@ function App() {
     setImage(file);
   };
 
+  const handleTip = async (hash: string) => {
+    let tipAmount = Web3.utils.toWei("0.0001", "ether");
+    contract.tipImageOwner(hash, tipAmount);
+  };
+
   const uploadImage = async (description: string) => {
     setImageDescription(description);
     setLoaded(false);
     const cid = await client.put([image]);
-    let res = await client.get(`${cid}`);
-    if (!res?.ok) {
-      throw new Error(
-        `failed to get ${cid} - [${res?.status}] ${res?.statusText}`
-      );
+    const imageUrl = await retrieveImageFromWeb3Storage(cid);
+    setImageFromIPFS(imageUrl);
+    try {
+      await contract.uploadImage(cid, description);
+    } catch (error) {
+      ethers.utils.toUtf8String(Object.values(error as any));
     }
-    const file = await res?.files();
-    const bufferArray = await file[0].arrayBuffer();
-    const img = Buffer.from(bufferArray).toString("base64");
-    setImageFromIPFS("data:image/png;base64," + img);
-    setLoaded(true);
-    contract.uploadImage("cid", "description").catch((er: any) => {
-      ethers.utils.toUtf8String(Object.values(er));
-    });
-    // console.log(result);
     setLoaded(true);
   };
 
@@ -128,14 +139,24 @@ function App() {
         error={error}
         loaded={loaded}
       />
+      {images.length > 0 && (
+        <ImageList>
+          {images.map((image: image) => {
+            if (!image.url) return;
+            return (
+              <ImageItem
+                hash={image.hash}
+                key={image.hash}
+                url={image.url}
+                description={image.description}
+                onClick={handleTip}
+              />
+            );
+          })}
+        </ImageList>
+      )}
       {active && (
         <FormStyle onSubmit={(e) => handleFormSubmit(e)}>
-          {imageFromIPFS && (
-            <>
-              <img src={imageFromIPFS} />
-              <p>{imageDescription}</p>
-            </>
-          )}
           <input
             name="file"
             id="raised-button-file"
