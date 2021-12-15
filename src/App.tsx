@@ -31,12 +31,7 @@ function App() {
   const [imageDescription, setImageDescription] = useState<any>();
   const [imageName, setImageName] = useState<any>();
   const [imageFromIPFS, setImageFromIPFS] = useState<any>();
-  const [data, setData] = useState({
-    account: "",
-    app: null,
-    images: [],
-    loading: true,
-  });
+  const [images, setImages] = useState([]);
   const [contract, setContract] = useState<any>(undefined);
   function connect(): void {
     try {
@@ -55,6 +50,13 @@ function App() {
     }
   }
 
+  // useEffect(() => {
+  //   if (!active) return;
+  //   (async () => {
+  //     const imagesCount = await contract.imageCount();
+  //     console.log(imagesCount);
+  //   })();
+  // }, [image]);
   useEffect(() => {
     if (active) return;
     connect();
@@ -64,12 +66,15 @@ function App() {
     (async () => {
       const provider = new ethers.providers.JsonRpcProvider();
       const app = new ethers.Contract(
-        AppJson.networks[1639478509425].address,
+        AppJson.networks[1639593594007].address,
         AppJson.abi,
-        provider
+        provider.getSigner()
       );
       if (!app) return;
       setContract(app);
+      app.name().then((res: any) => {
+        console.log(res);
+      });
     })();
   }, [setContract]);
 
@@ -101,16 +106,15 @@ function App() {
         `failed to get ${cid} - [${res?.status}] ${res?.statusText}`
       );
     }
-    const file = ((await res?.files()) as any)[0];
-    const bufferArray = await file.arrayBuffer();
+    const file = await res?.files();
+    const bufferArray = await file[0].arrayBuffer();
     const img = Buffer.from(bufferArray).toString("base64");
     setImageFromIPFS("data:image/png;base64," + img);
     setLoaded(true);
-
-    const result = await contract.uploadImage(image, description, {
-      from: account,
+    contract.uploadImage("cid", "description").catch((er: any) => {
+      ethers.utils.toUtf8String(Object.values(er));
     });
-    console.log(result);
+    // console.log(result);
     setLoaded(true);
   };
 
